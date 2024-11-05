@@ -1,0 +1,39 @@
+---
+title: "Phase 1 - Proyect Education Formal"
+output: html_notebook
+---
+
+Install haven packages
+
+```{r}
+install.packages("haven")
+```
+Import libraries to work
+
+```{r}
+library(arules)
+library(haven)
+```
+
+
+Read data from .sav
+
+```{r}
+data <- read_sav("data.sav")
+head(data)
+data
+```
+
+Find rules apriori with support 0.4 and confidence 0.5
+
+```{r}
+data <- data[,-1]
+reglas <- apriori(data, parameter = list(support=0.4, confidence=0.5))
+```
+
+Inspect rule 0 to 100
+
+```{r}
+inspect(reglas[100:199])
+```
+
