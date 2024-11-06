@@ -24,6 +24,14 @@ head(data)
 data
 ```
 
+Testing data
+
+```{r}
+data[data$Graduando == 2,] # Graduando 1 es que esta en el último año de su nivel, 2 es que no lo está, 9 es desconocido
+data[data$Repitente == 1,] # Repitente 1 es que está repitiendo el grado, 2 es que no lo está repitiendo, 9 es desconocido
+```
+
+
 Find rules apriori with support 0.4 and confidence 0.5
 
 ```{r}
@@ -34,6 +42,65 @@ reglas <- apriori(data, parameter = list(support=0.4, confidence=0.5))
 Inspect rule 0 to 100
 
 ```{r}
-inspect(reglas[100:199])
+inspect(reglas[300:399]) 
+# En este set en el 319 parece haber uno interesante, los extranjeros tienen una alta confidencia de no ser repitentes.
+# También parece que en el 380 sugiere que de primaria a diversificado, si no es repitente no es graduando, por lo que sugiere que en los graduandos es donde # hay una mayor taza de repitencia
+
+inspect(reglas[600:799])
+# Regla 786 dice que mucho estudiante arriba de preprimaria, que no es repitente y tampoco graduando de su nivel, es del área rural
+
+```
+
+Level produce a lot of noise with grade into the data, so we need to filter it, in this case we filter only secondary level
+
+```{r}
+data_secundaria <- data[data$Nivel == 3,]
+data_secundaria <- data_secundaria[,-8]
+data_secundaria
+```
+
+
+Find rules apriori with support 0.3 and confidence 0.5
+
+```{r}
+reglas <- apriori(data_secundaria, parameter = list(support=0.3, confidence=0.5))
+```
+```{r}
+inspect(reglas[0:199])
+# Aquí hay cosas interesantes como la regla 16, donde menciona que hay una fuerte correlación entre ser extranjero y que su jornada sea matutina
+# Aquí también se ve en la regla 32 que hay una correlación entre ser del área rural y que su jornada no sea matutina
+# En la regla 45 y 36 hay una correlación entre no ser del sector publico y que el área de la persona sea urbana.
+# En la regla 49 muestra que si el sector no es público hay correlación que la jornada no sea matutina.
+# Regla 51 Los extranjeros no estudian en el sector público
+# Regla 66 los extranjeros normalmente estan en un área urbana.
+
+
+inspect(reglas[200:399])
+# En la regla 300 Hay una correlación entre no ser del sector publico y ser del área urbana
+```
+
+Grado, Graduando y Repitente parece hacer mucho ruido
+
+```{r}
+data_secundaria <- data_secundaria[,-7]
+data_secundaria <- data_secundaria[,-12]
+data_secundaria <- data_secundaria[,-11]
+data_secundaria
+```
+
+Find rules apriori with support 0.3 and confidence 0.5
+
+```{r}
+reglas <- apriori(data_secundaria, parameter = list(support=0.3, confidence=0.5))
+```
+```{r}
+inspect(reglas[0:199])
+# Regla 28 que el área sea urbana y el sector no sea publico
+# Regla 30 que la jornada no sea matutina y el sector no sea público
+# Regla 39 que el área sea urbana y la jornada no sea matutina
+# Regla 49 que el sea extranjero y que su jornada no sea matutina
+
+
+inspect(reglas[400:416])
 ```
 
