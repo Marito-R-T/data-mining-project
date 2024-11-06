@@ -79,7 +79,7 @@ inspect(reglas[200:399])
 # En la regla 300 Hay una correlación entre no ser del sector publico y ser del área urbana
 ```
 
-Grado, Graduando y Repitente parece hacer mucho ruido
+Grado, Graduando and Repitente produce a lot of noise in rules, so I try remove it.
 
 ```{r}
 data_secundaria <- data_secundaria[,-7]
