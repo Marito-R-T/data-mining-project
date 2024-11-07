@@ -104,3 +104,56 @@ inspect(reglas[0:199])
 inspect(reglas[400:416])
 ```
 
+# Analisis por medio de fpgrowth
+
+Find rules about high school with support 0.3 and confidence 0.5
+Remove columns who represents a lot of noise
+
+```{r}
+datafp <- data
+datafp <- datafp[,-7]
+datafp <- datafp[,-12]
+datafp <- datafp[,-12]
+datafp <- datafp[datafp$Nivel == 4,]
+datafp <- datafp[,-7]
+reglasfp <- fim4r(datafp, method = "fpgrowth", target = "rules", support = .3, confidence = .5)
+```
+```{r}
+datafp
+datafp[datafp$Pueblo_Per == 9,]
+```
+
+View Rules
+
+```{r}
+reglasfpframe <- as(reglasfp, "data.frame")
+View(reglasfpframe)
+# Regla 126, alta confianza en que los extranjeros estudian en horarios no matutinos
+# Regla 191 Si el sector no es público la jornada es más probable que no sea matutina.
+```
+
+
+Remove All undefined data
+
+```{r}
+datafp <- datafp[datafp$Sexo != 9,]
+datafp <- datafp[datafp$Sector != 9,]
+datafp <- datafp[datafp$Área != 9,]
+datafp <- datafp[datafp$Pueblo_Per != 9,]
+datafp <- datafp[datafp$Plan_Est != 9,]
+datafp <- datafp[datafp$Jornada_Est != 9,]
+datafp <- datafp[datafp$Resultado_F != 9,]
+reglasfp <- fim4r(datafp, method = "fpgrowth", target = "rules", support = .3, confidence = .5)
+```
+View Data
+
+```{r}
+reglasfpframe <- as(reglasfp, "data.frame")
+View(reglasfpframe)
+# Regla 446 Los alumnos de los departamentos de Guatemala, El progreso, Sacatepéquez, Chimaltenango, Escuintla, Santa Rosa, Sololá, Toto, Quetgo son departamentos los cuales es más probable que no pertenezcan al sector público.
+# Regla 190 Los sectores que no son públicos son mayoritariamente de alumnos pertenecientes a la población extranjera.
+# Regla 703 El sector no publico tiene más probabilidad de tener una jornada no matutina
+# Analizando data se puede ver que el glosario entregado esta incorrecto, el pueblo de pertenencia 5, el cuál dice que es extranjero, en realidad es Mestizo/Ladino, el 6 es otro, Maya es 1, Garifuna 2, Xinca 3, Extranjero 4 (parece aunque no hay data), Por lo que todo las reglas anteriores que diga Extranjero es Mestizo/Ladino y otro.
+# Regla 976 aunque ya cerca del .3 de soporte, se encuentra que si la jornada es matutina, es más probable que pertenezca al pueblo ladino, aunque en la regla 558 se muestra que el pueblo es ladino también si la jornada no es matutina, se tiene un problema de información mayoritaria para el los ladinos.
+```
+
