@@ -27,15 +27,16 @@ data
 Testing data
 
 ```{r}
+data <- data[,-1]
 data[data$Graduando == 2,] # Graduando 1 es que esta en el último año de su nivel, 2 es que no lo está, 9 es desconocido
 data[data$Repitente == 1,] # Repitente 1 es que está repitiendo el grado, 2 es que no lo está repitiendo, 9 es desconocido
 ```
 
+# Analisis por medio de Apriori
 
 Find rules apriori with support 0.4 and confidence 0.5
 
 ```{r}
-data <- data[,-1]
 reglas <- apriori(data, parameter = list(support=0.4, confidence=0.5))
 ```
 
@@ -156,4 +157,275 @@ View(reglasfpframe)
 # Analizando data se puede ver que el glosario entregado esta incorrecto, el pueblo de pertenencia 5, el cuál dice que es extranjero, en realidad es Mestizo/Ladino, el 6 es otro, Maya es 1, Garifuna 2, Xinca 3, Extranjero 4 (parece aunque no hay data), Por lo que todo las reglas anteriores que diga Extranjero es Mestizo/Ladino y otro.
 # Regla 976 aunque ya cerca del .3 de soporte, se encuentra que si la jornada es matutina, es más probable que pertenezca al pueblo ladino, aunque en la regla 558 se muestra que el pueblo es ladino también si la jornada no es matutina, se tiene un problema de información mayoritaria para el los ladinos.
 ```
+
+# Kmeans functionality
+
+```{r}
+datakmeans <- data
+datakmeans <- datakmeans[,-1]
+datakmeans <- datakmeans[,-2]
+datakmeans <- datakmeans[datakmeans$Sexo != 9,]
+datakmeans <- datakmeans[datakmeans$Sexo != 9,]
+datakmeans <- datakmeans[datakmeans$Sector != 9,]
+datakmeans <- datakmeans[datakmeans$Área != 9,]
+datakmeans <- datakmeans[datakmeans$Pueblo_Per != 9,]
+datakmeans <- datakmeans[datakmeans$Pueblo_Per != 6,]
+datakmeans <- datakmeans[datakmeans$Plan_Est != 9,]
+datakmeans <- datakmeans[datakmeans$Jornada_Est != 9,]
+datakmeans <- datakmeans[datakmeans$Resultado_F != 9,]
+```
+
+View if exist NA data
+
+```{r}
+summary(datakmeans)
+datakmeans <- na.omit(datakmeans)
+datakmeans
+```
+
+
+Import library ggplot2 y ggalt
+
+```{r}
+library(ggplot2)
+library(ggalt)
+```
+
+Make kmeans analysis with 5 centers
+
+```{r}
+cluster <- kmeans(datakmeans, 2)
+```
+
+
+Graphic Pueblo de Pertenencia vs Sector
+
+```{r}
+ggplot(datakmeans, aes(x = Pueblo_Per, y = Sector, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Pueblo_Per, y = Sector), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue")) +
+  scale_shape_manual(values = c(16, 17, 15)) +
+  labs(title = "Pueblo de pertenencia vs Sector del establecimiento", x = "Pueblo de Pertenencia", y = "Sector")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# Se puede visualizar que aún teniendo Un poco más de inclinación que el centroide cercano a la población ladina este más alejada al sector público, es minimo e insignificante.
+```
+
+Graphic Pueblo de Pertenencia vs Sector, solo pueblo 1 y 5 (mayoría de los datos)
+
+```{r}
+datakmeans_1 <- datakmeans[datakmeans$Pueblo_Per == 1 | datakmeans$Pueblo_Per == 5,]
+datakmeans_1$Pueblo_Per[datakmeans_1$Pueblo_Per == 5] <- 2
+cluster <- kmeans(datakmeans_1, 2)
+ggplot(datakmeans_1, aes(x = Pueblo_Per, y = Sector, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Pueblo_Per, y = Sector), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue")) +
+  scale_shape_manual(values = c(16, 17, 15)) +
+  labs(title = "Pueblo de pertenencia vs Sector del establecimiento", x = "Pueblo de Pertenencia", y = "Sector")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# Al hacer enfasis en los dos pueblos de pertenecias más sobrerepresentados, es aún menor la diferencia e indestinguible, aunque sigue habiendo una peuqeña desviación a que los ladinos esten menos en el sector público a comparación del pueblo maya.
+```
+
+
+Graphic Pueblo de Pertenencia vs Área
+
+```{r}
+cluster <- kmeans(datakmeans, 2)
+ggplot(datakmeans, aes(x = Pueblo_Per, y = Área, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Pueblo_Per, y = Área), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue")) +
+  scale_shape_manual(values = c(16, 17, 15)) +
+  labs(title = "Pueblo de pertenencia vs Area", x = "Pueblo de Pertenencia", y = "Área")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# Al igual que con el Sector, aunque se podría decir que más marcado, pero tampoco algo representativo, las personas ladinas tienden a pertenecer más al área urbana y la maya, garifuna, Xinca a la Rural.
+```
+
+Graphic Pueblo de Pertenencia vs Área, solo pueblo 1 y 5 (mayoría de los datos)
+
+```{r}
+datakmeans_2 <- datakmeans[datakmeans$Pueblo_Per == 1 | datakmeans$Pueblo_Per == 5,]
+datakmeans_2$Pueblo_Per[datakmeans_2$Pueblo_Per == 5] <- 2
+cluster <- kmeans(datakmeans_2, 2)
+ggplot(datakmeans_2, aes(x = Pueblo_Per, y = Área, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Pueblo_Per, y = Área), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue")) +
+  scale_shape_manual(values = c(16, 17, 15)) +
+  labs(title = "Pueblo de pertenencia vs Area", x = "Pueblo de Pertenencia", y = "Área")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# Sin ningún cambio significativo con el anterior, el pueblo maya tiene tendencia a pertenecer al área rural y la ladina a la urbana, pero no es crítico.
+```
+
+Graphic Departamento vs Sexo
+
+```{r}
+cluster <- kmeans(datakmeans, 4)
+ggplot(datakmeans, aes(x = Departamento_F, y = Sexo, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Departamento_F, y = Sexo), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue", "red", "green")) +
+  scale_shape_manual(values = c(16, 16, 16, 16, 16)) +
+  labs(title = "Departamento vs Sexo", x = "Departamento", y = "Sexo")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# Interesantemente parece ser que todos los departamentos tienen una distribución muy pareja entre hombres y mujeres, aunque el como se agrupan los datos claramente deja ver que esta separando regiones
+```
+
+Graphic Departamento vs Área
+
+```{r}
+cluster <- kmeans(datakmeans, 4)
+ggplot(datakmeans, aes(x = Departamento_F, y = Área, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Departamento_F, y = Área), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue", "red", "green")) +
+  scale_shape_manual(values = c(16, 16, 16, 16, 16)) +
+  labs(title = "Departamento vs Área", x = "Departamento", y = "Área")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# En este si hay un comportamiento interesantemente creciente entre regiones y al área que pertenecen sus alumnos, el centroide de los departamentos del centro del país cercanos a la capital son altamente población estudiantil urbana, mientras el occidente es el que le sigue aunque ya más cercano a una población rural y aún más cercanos al área rural está el norte y oriente del país.
+```
+
+Graphic Departamento vs Sector
+
+```{r}
+cluster <- kmeans(datakmeans, 4)
+ggplot(datakmeans, aes(x = Departamento_F, y = Sector, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Departamento_F, y = Sector), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue", "red", "green")) +
+  scale_shape_manual(values = c(16, 16, 16, 16, 16)) +
+  labs(title = "Departamento vs Sector", x = "Departamento", y = "Sector")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# Aquí hay una menor diferencia comparado al área, pero sigue habiendo una tendencia, donde el oriente y norte del país tiene una alta cantidad de estudiantes en el sector público, mientras que el occidente y sobretodo el centro del país tiene una alta presencia de los otros sectores como privado, municipal y cooperativa. Aunque tal vez sea por que hay mayor información solo del público y privado.
+```
+
+
+Graphic Área vs Sector
+
+```{r}
+cluster <- kmeans(datakmeans, 2)
+ggplot(datakmeans, aes(x = Área, y = Sector, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Área, y = Sector), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue", "red", "green")) +
+  scale_shape_manual(values = c(16, 16, 16, 16, 16)) +
+  labs(title = "Área vs Sector", x = "Área", y = "Sector")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# Parece que si el sector es público es más probable que el área sea rural, mientras si el sector es mayormente de los otros sectores se acerca más al urbano.
+```
+
+
+Graphic Departamento vs Sector (solo sector publico y privado)
+
+```{r}
+datakmeans_3 <- datakmeans[datakmeans$Sector == 1 | datakmeans$Sector == 2,]
+cluster <- kmeans(datakmeans_3, 4)
+ggplot(datakmeans_3, aes(x = Departamento_F, y = Sector, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Departamento_F, y = Sector), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue", "red", "green")) +
+  scale_shape_manual(values = c(16, 16, 16, 16, 16)) +
+  labs(title = "Departamento vs Sector", x = "Departamento", y = "Sector")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# En general hay una mayor representación del sector público en el país, pero el sector privado que le sigue tiene casi la misma representación en la capital y departamentos cercanos, le sigue el occidente no muy separado del norte y oriente que tienen una representación mayoritaria en el sector publico.
+```
+
+
+
+Graphic Área vs Sector
+
+```{r}
+datakmeans_4 <- datakmeans[datakmeans$Sector == 1 | datakmeans$Sector == 2,]
+cluster <- kmeans(datakmeans_4, 2)
+ggplot(datakmeans_4, aes(x = Área, y = Sector, color = as.factor(cluster$cluster)))+
+  geom_point()+
+  geom_point(data = as.data.frame(cluster$centers), aes(x=Área, y = Sector), color = "black", fill="black", size=4, shape=21)+
+  geom_encircle(aes(group = cluster$cluster, fill = as.factor(cluster$cluster)),
+                alpha = 0.2, s_shape = 1, expand = 0.05) +
+  scale_color_manual(values = c("purple", "orange", "blue", "red", "green")) +
+  scale_shape_manual(values = c(16, 16, 16, 16, 16)) +
+  labs(title = "Área vs Sector", x = "Área", y = "Sector")+
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right",
+    legend.title = element_blank()
+  )
+
+# Hay una diferencia que si eres del sector público estás más cercano al área rural, y mientras más cercano al sector privado más cercano al área urbana, tampoco es una diferencia tan clave, pero si es notoria.
+```
+
 
