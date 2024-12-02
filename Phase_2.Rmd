@@ -1,0 +1,184 @@
+---
+title: "Phase 2 - Proyect Education Formal"
+output: html_notebook
+---
+
+# import libraries
+
+```{r}
+library(rpart)
+library(rpart.plot)
+library(arules)
+library(haven)
+```
+
+# Read data from .sav
+
+```{r}
+estudiantes <- read_sav("data.sav")
+head(estudiantes)
+estudiantes
+```
+```{r}
+estudiantes[estudiantes$Pueblo_Per == 5,]
+```
+
+# Create Decision tree to get Pueblo de pertenencia
+
+```{r}
+arbol1 <- rpart(Pueblo_Per ~
+               Sexo+
+               Plan_Est+
+               Jornada_Est+
+               Área+
+               Sector+
+               Departamento_F,
+               data = estudiantes, method = "class")
+
+rpart.plot(arbol1, type=2, extra=0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn", 
+           main ="Predicción de pueblo de pertenencia", cex = 1)
+```
+### Recordando que el 5 es ladino y el 1 es maya, nos podemos dar cuenta que la variable que determina si es ladino o maya es el departamento, donde si el departamento es Guatemala, El progreso, Sacatepéquez, Quetzaltenango, Suchitepéquez, Retalhuleu, San Marcos, Peten, Izabal, Zacapa, Chiquimula, Jalapa, Jutiapa es ladino, de lo contrario es Maya.
+```{r}
+estudiante <- data.frame(
+   Sexo=c(1,2,1),
+   Plan_Est=c(1,2,1),
+   Jornada_Est=c(1,2,1),
+   Área=c(2,1,2),
+   Sector=c(3,1,3),
+   Departamento_F=c(1,16,8)
+)
+predict(arbol1, estudiante, type="class")
+```
+### Con el estudiante 1 y el 3 la única diferencia es el departamento uno es de Guatemala y otro de Totonicapan y es lo que hace que sea ladino o maya.
+
+# Create Decision tree to get Pueblo de pertenencia without Departamento
+
+```{r}
+arbol <- rpart(Pueblo_Per ~
+               Sexo+
+               Plan_Est+
+               Jornada_Est+
+               Área+
+               Sector,
+               data = estudiantes, method = "class")
+
+rpart.plot(arbol, type=2, extra=0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn", 
+           main ="Predicción de pueblo de pertenencia", cex = 1)
+```
+
+### Si quitamos el Departamento se dice que es más probable que sea ladino en general, ya que con las otras variables no se puede asignar si es ladino, maya, garifuna, Xinca u otro.
+
+# Create Decision tree to get Área de pertenencia
+
+```{r}
+arbol2 <- rpart(Área ~
+               Sexo+
+               Plan_Est+
+               Jornada_Est+
+               Pueblo_Per+
+               Sector+
+               Departamento_F,
+               data = estudiantes, method = "class")
+
+rpart.plot(arbol2, type=2, extra=0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn", 
+           main ="Predicción de Área", cex = 1)
+```
+
+### Aquí realmente se puede verificar una de las reglas del apriori donde decía que el sector y el área estan relacionadas, donde si el sector es privado, municipal o cooperativa el área del estudiante es urbana, aunque aquí se extiende la relación donde decía que si el sector es público era rural, pues aquí es si el sector es publico y es del departamento de Guatemala, El progreso o Sacatepéquez sigue siendo urbano y si no es altamente probable rural.
+```{r}
+estudiante2 <- data.frame(
+   Sexo=c(1,2,1),
+   Plan_Est=c(1,2,1),
+   Jornada_Est=c(1,2,1),
+   Pueblo_Per=c(1,5,2),
+   Sector=c(1,1,3),
+   Departamento_F=c(1,16,8)
+)
+predict(arbol2, estudiante2, type="class")
+```
+### Con el estudiante 1 y el 2 vemos que son del sector público, pero uno es de los 3 departamentos del centro del país, y el otro no, mientras el último es de un sector municipal, por lo que por eso es que uno obtiene Urbana, Rural y Urbana respectivamente.
+
+
+# Create Decision tree to get Sector
+
+```{r}
+arbol3 <- rpart(Sector ~
+               Sexo+
+               Plan_Est+
+               Jornada_Est+
+               Pueblo_Per+
+               Área+
+               Departamento_F,
+               data = estudiantes, method = "class")
+
+rpart.plot(arbol3, type=2, extra=0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn", 
+           main ="Predicción de Sector", cex = 1)
+```
+
+### Aquí nos damos cuenta que el sector tiene relaciones más complejas, y que los sectores públicos y privados son los sobrepresentados como vimos en el análisis de la data de la fase 1, ya que solo se puede predecir si es público o privado el sector del alumno, donde si el área es rural entonces el sector es público, si el área es urbana y el plan de estudio no es diario entonces es privada, si el área es urbana, el plan de estudio es diario y el departamento no es la cápital es del sector público, pero si en este mismo caso es la capital y la jornada es matutina es privada si no es matutina es pública.
+```{r}
+estudiante3 <- data.frame(
+   Sexo=c(1,2,1),
+   Plan_Est=c(1,2,1),
+   Jornada_Est=c(1,2,2),
+   Pueblo_Per=c(1,5,2),
+   Área=c(1,1,2),
+   Departamento_F=c(2,16,8)
+)
+predict(arbol3, estudiante3, type="class")
+```
+### Cómo vemos estos tres estudiantes solo fueron catalogados entre el sector público y privado.
+
+
+# Create Decision tree to get Sexo
+
+```{r}
+arbol4 <- rpart(Sexo ~
+               Sector+
+               Plan_Est+
+               Jornada_Est+
+               Pueblo_Per+
+               Área+
+               Departamento_F,
+               data = estudiantes, method = "class")
+
+rpart.plot(arbol4, type=2, extra=0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn", 
+           main ="Predicción de Sexo", cex = 1)
+```
+
+### Aquí se comprueba lo que en el análisis anterior se vio y parecio interesante, y es que el sexo no va ligado con otras variables, no se puede asumir si es hombre o mujer a partir de otras variables.
+
+
+# Create Decision tree to get Jornada
+
+```{r}
+arbol5 <- rpart(Jornada_Est ~
+               Sector+
+               Plan_Est+
+               Sexo+
+               Pueblo_Per+
+               Área+
+               Departamento_F,
+               data = estudiantes, method = "class")
+
+rpart.plot(arbol5, type=2, extra=0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn", 
+           main ="Predicción de Jornada a la que pertenece el estudiante", cex = 1)
+```
+
+### Aquí se vicualiza que la jornada del estudiante depende principalmente del sector, donde si el sector no es publico o privado, la jornada es vespertina, si el sector es público o privado ya se complica el analisis, donde si el plan de estudio es diario o a distancia entonces la jornada es matutina, si el plan de estudio es fin de semana entonces la jornada es doble, si el plan de estudio es semipresencial o mixto la jornada no fue respondida.
+
+```{r}
+estudiante5 <- data.frame(
+   Sexo=c(1,2,1,2),
+   Plan_Est=c(1,2,1,5),
+   Sector=c(1,2,3,1),
+   Pueblo_Per=c(1,5,2,5),
+   Área=c(1,1,2,2),
+   Departamento_F=c(2,16,8,1)
+)
+predict(arbol5, estudiante5, type="class")
+```
+### Cómo vemos estos 4 estudiantes tienen las caracteristicas necesarias según el arbol para que prediga si su jornada es matutina, doble, vespertina o ignorada. Donde parece ser que la jornada nocturna o intermedia no es usada mucho.
+
+
