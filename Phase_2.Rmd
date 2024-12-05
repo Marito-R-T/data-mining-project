@@ -23,7 +23,9 @@ estudiantes
 estudiantes[estudiantes$Pueblo_Per == 5,]
 ```
 
-# Create Decision tree to get Pueblo de pertenencia
+# Decision tree
+
+## Create Decision tree to get Pueblo de pertenencia
 
 ```{r}
 arbol1 <- rpart(Pueblo_Per ~
@@ -52,7 +54,7 @@ predict(arbol1, estudiante, type="class")
 ```
 ### Con el estudiante 1 y el 3 la única diferencia es el departamento uno es de Guatemala y otro de Totonicapan y es lo que hace que sea ladino o maya.
 
-# Create Decision tree to get Pueblo de pertenencia without Departamento
+## Create Decision tree to get Pueblo de pertenencia without Departamento
 
 ```{r}
 arbol <- rpart(Pueblo_Per ~
@@ -69,7 +71,7 @@ rpart.plot(arbol, type=2, extra=0, under = TRUE, fallen.leaves = TRUE, box.palet
 
 ### Si quitamos el Departamento se dice que es más probable que sea ladino en general, ya que con las otras variables no se puede asignar si es ladino, maya, garifuna, Xinca u otro.
 
-# Create Decision tree to get Área de pertenencia
+## Create Decision tree to get Área de pertenencia
 
 ```{r}
 arbol2 <- rpart(Área ~
@@ -100,7 +102,7 @@ predict(arbol2, estudiante2, type="class")
 ### Con el estudiante 1 y el 2 vemos que son del sector público, pero uno es de los 3 departamentos del centro del país, y el otro no, mientras el último es de un sector municipal, por lo que por eso es que uno obtiene Urbana, Rural y Urbana respectivamente.
 
 
-# Create Decision tree to get Sector
+## Create Decision tree to get Sector
 
 ```{r}
 arbol3 <- rpart(Sector ~
@@ -131,7 +133,7 @@ predict(arbol3, estudiante3, type="class")
 ### Cómo vemos estos tres estudiantes solo fueron catalogados entre el sector público y privado.
 
 
-# Create Decision tree to get Sexo
+## Create Decision tree to get Sexo
 
 ```{r}
 arbol4 <- rpart(Sexo ~
@@ -150,7 +152,7 @@ rpart.plot(arbol4, type=2, extra=0, under = TRUE, fallen.leaves = TRUE, box.pale
 ### Aquí se comprueba lo que en el análisis anterior se vio y parecio interesante, y es que el sexo no va ligado con otras variables, no se puede asumir si es hombre o mujer a partir de otras variables.
 
 
-# Create Decision tree to get Jornada
+## Create Decision tree to get Jornada
 
 ```{r}
 arbol5 <- rpart(Jornada_Est ~
@@ -181,4 +183,248 @@ predict(arbol5, estudiante5, type="class")
 ```
 ### Cómo vemos estos 4 estudiantes tienen las caracteristicas necesarias según el arbol para que prediga si su jornada es matutina, doble, vespertina o ignorada. Donde parece ser que la jornada nocturna o intermedia no es usada mucho.
 
+# Random Forest
+
+```{r}
+library(randomForest)
+```
+
+## Random Forest to get Pueblo de pertenencia
+```{r}
+estudiante2 <- estudiantes[,c("Pueblo_Per", "Sexo", "Plan_Est", "Jornada_Est", "Área", "Sector", "Departamento_F")]
+
+estudiante2$Pueblo_Per <- as.factor(estudiante2$Pueblo_Per)
+
+set.seed(100)
+estudiante2 <- estudiante2[sample(1:nrow(estudiante2)),]
+
+index <-sample(1:nrow(estudiante2), 0.8*nrow(estudiante2))
+
+train <- estudiante2[index,]
+test <- estudiante2[-index,]
+
+bosque1 <- randomForest(Pueblo_Per ~
+               Sexo+
+               Plan_Est+
+               Jornada_Est+
+               Área+
+               Sector+
+               Departamento_F,
+               data = train,
+               ntree = 10,
+               mtry = 4
+            )
+entreno <- predict(bosque1, test)
+entreno
+```
+
+
+
+### Como podemos verificar, es que solo puede resolver casos para 1 y 5, ya que los ladinos y mayas están sobrerepresentados. Se hace con un número de arboles corto, ya que si no crece demasiado y da error de memoria.
+
+```{r}
+student <- data.frame(
+   Sexo=c(1,2,1),
+   Plan_Est=c(1,2,1),
+   Jornada_Est=c(1,2,1),
+   Área=c(2,1,2),
+   Sector=c(3,1,3),
+   Departamento_F=c(1,16,8)
+)
+predict(bosque1, student)
+```
+### Tiene las mismas respuestas que el de el arbol normal en las mismas pruebas.
+
+## Random Forest to get Área de pertenencia
+```{r}
+estudiante3 <- estudiantes[,c("Pueblo_Per", "Sexo", "Plan_Est", "Jornada_Est", "Área", "Sector", "Departamento_F")]
+
+estudiante3$Área <- as.factor(estudiante3$Área)
+
+set.seed(100)
+estudiante3 <- estudiante3[sample(1:nrow(estudiante3)),]
+
+index <-sample(1:nrow(estudiante3), 0.8*nrow(estudiante3))
+
+train <- estudiante3[index,]
+test <- estudiante3[-index,]
+
+bosque2 <- randomForest(Área ~
+               Sexo+
+               Plan_Est+
+               Jornada_Est+
+               Pueblo_Per+
+               Sector+
+               Departamento_F,
+               data = train,
+               ntree = 20,
+               mtry = 4
+            )
+entreno <- predict(bosque2, test)
+entreno
+```
+
+### Se puede visualizar que los valores de respuesta son entre uno o dos, que tiene sentido ya que el Área es solo Urbana o Rural
+
+```{r}
+student2 <- data.frame(
+   Sexo=c(1,2,1),
+   Plan_Est=c(1,2,1),
+   Jornada_Est=c(1,2,1),
+   Pueblo_Per=c(1,5,2),
+   Sector=c(1,1,3),
+   Departamento_F=c(1,16,8)
+)
+predict(bosque2, student2)
+```
+### En este caso tiene respuestas diferentes a la del arbol normal, ya que el primero dice ser rural, urbana y urbana, en cambio antes en el del arbol de decisión predecia que era urbana, rural, urbana
+
+
+## Random Forest to get Sector
+```{r}
+estudiante4 <- estudiantes[,c("Pueblo_Per", "Sexo", "Plan_Est", "Jornada_Est", "Área", "Sector", "Departamento_F")]
+
+estudiante4$Sector <- as.factor(estudiante4$Sector)
+
+set.seed(100)
+estudiante4 <- estudiante4[sample(1:nrow(estudiante4)),]
+
+index <-sample(1:nrow(estudiante4), 0.8*nrow(estudiante4))
+
+train <- estudiante4[index,]
+test <- estudiante4[-index,]
+
+bosque3 <- randomForest(Sector ~
+               Sexo+
+               Plan_Est+
+               Jornada_Est+
+               Pueblo_Per+
+               Área+
+               Departamento_F,
+               data = train,
+               ntree = 15,
+               mtry = 4
+            )
+entreno <- predict(bosque3, test)
+entreno
+```
+
+### Se puede visualizar que los valores de respuesta son entre 1 y 2, cómo en el arbol de decisión se visualiza un mayoritario 1 y 2 en las respuestas que es publico y privado, aunque aquí si se encuentra algún 4 que es Cooperativa
+
+```{r}
+student3 <- data.frame(
+   Sexo=c(1,2,1),
+   Plan_Est=c(1,2,1),
+   Jornada_Est=c(1,2,2),
+   Pueblo_Per=c(1,5,2),
+   Área=c(1,1,2),
+   Departamento_F=c(2,16,8)
+)
+predict(bosque3, student3)
+```
+### En este caso en pocas combinaciones sería muy complicado encontrar el cuatro tomando en cuenta que en el arbol simple no muestra esta opción, y por los sujetos de muestra en los dos dan las mismas predicciones.
+
+
+## Random Forest to get Sexo
+```{r}
+estudiante5 <- estudiantes[,c("Pueblo_Per", "Sexo", "Plan_Est", "Jornada_Est", "Área", "Sector", "Departamento_F")]
+
+estudiante5$Sexo <- as.factor(estudiante5$Sexo)
+
+set.seed(100)
+estudiante5 <- estudiante5[sample(1:nrow(estudiante5)),]
+
+index <-sample(1:nrow(estudiante5), 0.8*nrow(estudiante5))
+
+train <- estudiante5[index,]
+test <- estudiante5[-index,]
+
+bosque4 <- randomForest(Sexo ~
+               Sector+
+               Plan_Est+
+               Jornada_Est+
+               Pueblo_Per+
+               Área+
+               Departamento_F,
+               data = train,
+               ntree = 15,
+               mtry = 4
+            )
+entreno <- predict(bosque4, test)
+entreno
+```
+
+### Se puede visualizar que los valores de respuesta son entre 1 y 2, cómo en el arbol de decisión se visualiza un mayoritario 1 y 2 en las respuestas que es publico y privado, aunque aquí si se encuentra algún 4 que es Cooperativa
+
+```{r}
+student4 <- data.frame(
+   Sector=c(1,2,1),
+   Plan_Est=c(1,2,4),
+   Jornada_Est=c(1,2,2),
+   Pueblo_Per=c(1,1,2),
+   Área=c(1,2,2),
+   Departamento_F=c(2,16,8)
+)
+predict(bosque4, student4)
+```
+### En este caso podemos ver una distribución bastante igual ya que hay una representación muy par entre los sexos, aunque es interesante ya que haciendo pruebas solo me daban mujer como predicción, pero al cambiar el área y pueblo perteneciente, y ser maya y del área rural fue el factor que hizo que cambiara a que fuera hombre, habría que seguir haciendo varias combinaciones para probar este hecho, pero parece importante he interesante.
+
+
+## Random Forest to get Jornada
+```{r}
+estudiante6 <- estudiantes[,c("Pueblo_Per", "Sexo", "Plan_Est", "Jornada_Est", "Área", "Sector", "Departamento_F")]
+
+estudiante6$Jornada_Est <- as.factor(estudiante6$Jornada_Est)
+
+set.seed(100)
+estudiante6 <- estudiante6[sample(1:nrow(estudiante6)),]
+
+index <-sample(1:nrow(estudiante6), 0.8*nrow(estudiante6))
+
+train <- estudiante6[index,]
+test <- estudiante6[-index,]
+
+bosque5 <- randomForest(Jornada_Est ~
+               Sector+
+               Plan_Est+
+               Sexo+
+               Pueblo_Per+
+               Área+
+               Departamento_F,
+               data = train,
+               ntree = 20,
+               mtry = 5
+            )
+entreno <- predict(bosque5, test)
+entreno
+```
+
+### Se puede visualizar que los valores de predicción van del 1, 2, 4 y 9 principalmente como en el arbol de decisión, pero es una gran cantidad de posibilidad que sea Matutina, está sobrerepresentada, seguida por la vespertina y la doble, donde en fin de semana es que se vuelve factor clave para que sea doble.
+
+```{r}
+student5 <- data.frame(
+   Sexo=c(1,2,1,2),
+   Plan_Est=c(1,2,1,5),
+   Sector=c(1,2,3,1),
+   Pueblo_Per=c(1,5,2,5),
+   Área=c(1,1,2,2),
+   Departamento_F=c(2,16,8,1)
+)
+predict(bosque5, student5)
+```
+### En este caso podemos ver que los resultados dados desde los mismos testeos con el arbol de decision no esta regresando lo mismo, en vez de regresar 1 4 2 9, regresó 1 4 1 1, siendo los últimos dos los diferentes, vamos a intentar obtener estos datos, vamos a ver como se podrían obtenerlos.
+
+```{r}
+student5 <- data.frame(
+   Sexo=c(1,2,1,2),
+   Plan_Est=c(1,2,1,4),
+   Sector=c(1,2,4,1),
+   Pueblo_Per=c(1,5,2,5),
+   Área=c(1,1,2,2),
+   Departamento_F=c(2,16,8,1)
+)
+predict(bosque5, student5)
+```
+
+### Con plan estudiantil 4 que es semipresencial normalmente es cuando se obtiene que la jornada es indefinida osea 9, y uno de los factores principales para obtener que la jornada es vespertina es que el sector sea una cooperativa osea 4. Esto se hizo jugando con los datos hasta encontrar que variables tienen más peso para hacer la diferencia
 
